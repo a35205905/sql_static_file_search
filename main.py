@@ -1,31 +1,34 @@
 import os
 
-sql = ''
-static_files = []
-static_folders = []
-delete_static_files = []
+SQL = ''
+STATIC_FILES = []
+STATIC_FOLDERS = []
+DELETE_STATIC_FILES = []
 
 
 def main():
-    global sql
-    global static_files
-    global delete_static_files
+    global SQL
+    global STATIC_FILES
+    global DELETE_STATIC_FILES
 
-    print('-'*20 + '開始' + '-'*20)
+    print('-' * 20 + '開始' + '-' * 20)
     print('【一、搜索目錄設定】')
     folder_path = get_folder_path()
     print('【二、SQL 設定】')
     sql_path = get_sql_path(folder_path)
     sql_file = open(sql_path, 'r', encoding='utf-8')
-    sql = sql_file.read().replace('\n', '').replace('\r', '').strip()
+    SQL = sql_file.read().replace('\n', '').replace('\r', '').strip()
     sql_file.close()
     print('【三、靜態檔案目錄設定】')
     static_file_folder_path = get_static_file_folder_path(folder_path)
     print('【四、搜索靜態檔案】')
     print('進行中...')
     search_files(static_file_folder_path)
-    print('完成，已搜索到 ' + str(len(static_files)) + ' 個檔案，其中 ' + str(len(delete_static_files)) + ' 個檔案不存在於 .sql')
-    if len(delete_static_files):
+    print('完成，已搜索到 {static_files_count} 個檔案，其中 {delete_static_files_count} 個檔案不存在於 .sql'.format(
+        static_files_count=len(STATIC_FILES),
+        delete_static_files_count=len(DELETE_STATIC_FILES)
+    ))
+    if len(DELETE_STATIC_FILES):
         is_delete = input('是否要刪除所有不存在於 .sql 的檔案？[y/n]：').lower()
         if is_delete == 'y':
             delete_files()
@@ -74,7 +77,7 @@ def get_sql_path(folder_path):
 
 
 def get_static_file_folder_path(folder_path):
-    print('開始搜索 "' + folder_path + '" 中的靜態檔案目錄 ...')
+    print('開始搜索 "' + folder_path + '" 中的靜態檔案目錄(優先搜尋 S3) ...')
     # 篩出該目錄底下 s3 結尾的目錄
     folders = [
         f for f in os.listdir(folder_path)
@@ -95,40 +98,43 @@ def get_static_file_folder_path(folder_path):
 
 
 def search_files(folder_absolute_path, folder_relative_path='/', depth=1):
-    global sql
-    global static_files
-    global static_folders
-    global delete_static_files
+    global SQL
+    global STATIC_FILES
+    global STATIC_FOLDERS
+    global DELETE_STATIC_FILES
+
     for f in os.listdir(folder_absolute_path):
         object_absolute_path = os.path.join(folder_absolute_path, f)
         # ex. project/s3/post
         if os.path.isdir(object_absolute_path):
-            static_folders.append(object_absolute_path)
+            STATIC_FOLDERS.append(object_absolute_path)
             # 遞迴下去搜尋所有資料夾
             search_files(object_absolute_path, folder_relative_path + f + '/', depth + 1)
         # ex. project/s3/post/xxx.jpg
         elif os.path.isfile(object_absolute_path):
             # ex. /post/xxx.jpg
             object_relative_path = os.path.join(folder_relative_path, f)
-            static_files.append(object_absolute_path)
+            STATIC_FILES.append(object_absolute_path)
             # .sql 裡檔案路徑的開頭不會包含 / 因此判斷時要拿掉，舉例 s3://project/s3/post/xxx.jpg 在 .sql 是 post/xxx.jpg
-            if object_relative_path[1:] not in sql:
-                delete_static_files.append(object_absolute_path)
+            if object_relative_path[1:] not in SQL:
+                DELETE_STATIC_FILES.append(object_absolute_path)
                 print(object_relative_path + ' --> 不存在')
             else:
                 print(object_relative_path)
 
 
 def delete_files():
-    global delete_static_files
-    for f in delete_static_files:
+    global DELETE_STATIC_FILES
+
+    for f in DELETE_STATIC_FILES:
         os.remove(f)
         print(f + ' ----- 已刪除')
 
 
 def delete_empty_folders():
-    global static_folders
-    for f in static_folders:
+    global STATIC_FOLDERS
+
+    for f in STATIC_FOLDERS:
         if not os.listdir(f):
             os.rmdir(f)
             print(f + '/ ----- 已刪除')
