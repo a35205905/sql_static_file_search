@@ -93,7 +93,7 @@ def get_static_file_folder_path(folder_path):
                 folder_name = path.split('/')[-1]
                 break
 
-    print('已搜索到 ' + folder_name + '/')
+    print('已搜索到 ' + path + '/')
     return path
 
 
@@ -118,9 +118,9 @@ def search_files(folder_absolute_path, folder_relative_path='/', depth=1):
             # .sql 裡檔案路徑的開頭不會包含 / 因此判斷時要拿掉，舉例 s3://project/s3/post/xxx.jpg 在 .sql 是 post/xxx.jpg
             if object_relative_path[1:] not in SQL:
                 DELETE_STATIC_FILES.append(object_absolute_path)
-                print(object_relative_path + ' --> 不存在')
+                print('❌ ' + object_relative_path)
             else:
-                print(object_relative_path)
+                print('✅ ' + object_relative_path)
 
 
 def delete_files():
@@ -128,7 +128,7 @@ def delete_files():
 
     for f in DELETE_STATIC_FILES:
         os.remove(f)
-        print(f + ' ----- 已刪除')
+        print('已刪除 ----- ' + f)
 
 
 def delete_empty_folders():
@@ -137,7 +137,7 @@ def delete_empty_folders():
     for f in STATIC_FOLDERS:
         if not os.listdir(f):
             os.rmdir(f)
-            print(f + '/ ----- 已刪除')
+            print('已刪除 ----- ' + f + '/')
 
 
 if __name__ == '__main__':
