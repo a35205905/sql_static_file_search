@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 
 SQL = ''
 STATIC_FILES = []
@@ -116,9 +117,10 @@ def search_files(folder_absolute_path, folder_relative_path='/', depth=1):
             object_relative_path = os.path.join(folder_relative_path, f)
             STATIC_FILES.append(object_absolute_path)
             # .sql 裡檔案路徑的開頭不會包含 / 因此判斷時要拿掉，舉例 s3://project/s3/post/xxx.jpg 在 .sql 是 post/xxx.jpg
-            if object_relative_path[1:] not in SQL:
+            # 要連同搜尋 URL Encode 後的檔名(ex. 我是一張圖片.png -> E6%88%91%E6%98%AF%E4%B8%80%E5%BC%B5%E5%9C%96%E7%89%87.png)
+            if object_relative_path[1:] not in SQL and urllib.parse.quote(object_relative_path[1:]) not in SQL:
                 DELETE_STATIC_FILES.append(object_absolute_path)
-                print('❌ ' + object_relative_path)
+                print('❌ ' + object_relative_path + ', ' + urllib.parse.quote(object_relative_path[1:]))
             else:
                 print('✅ ' + object_relative_path)
 
